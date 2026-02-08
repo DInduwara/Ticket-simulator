@@ -1,0 +1,62 @@
+############################
+# OS / General
+############################
+.DS_Store
+Thumbs.db
+
+############################
+# IntelliJ / JetBrains
+############################
+.idea/
+*.iml
+out/
+.vscode/
+
+############################
+# Java / Spring Boot
+############################
+backend/.gradle/
+backend/build/
+backend/target/
+backend/logs/
+
+############################
+# SQLite
+############################
+backend/data/
+*.db
+*.sqlite
+*.sqlite3
+
+############################
+# Node / Next.js
+############################
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+
+############################
+# Environment files
+############################
+.env
+.env.local
+.env.development
+.env.production
+
+############################
+# Logs
+############################
+*.log
+
+############################
+# Coverage / Reports
+############################
+coverage/
+*.lcov
+
+############################
+# Temporary / Cache
+############################
+.tmp/
+.cache/
