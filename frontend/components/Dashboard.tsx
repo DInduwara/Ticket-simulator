@@ -7,6 +7,9 @@ import { StatGrid } from "./StatGrid";
 import { LogsPanel } from "./LogsPanel";
 import { Badge } from "./Badge";
 import { api } from "@/lib/api";
+import { LiveFlowDiagram } from "@/components/LiveFlowDiagram";
+import { LiveLineChart } from "@/components/LiveLineChart";
+
 
 export function Dashboard() {
     const [connected, setConnected] = useState(false);
@@ -61,6 +64,17 @@ export function Dashboard() {
                 maxCapacity={ui.maxCapacity}
                 totalLimit={ui.totalLimit}
             />
+
+            <LiveFlowDiagram
+                status={status}
+                logs={logs}
+                vendorCount={2}
+                customerCount={8}
+                vipCount={2}
+            />
+            <LiveLineChart status={status} />
+
+
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <LogsPanel logs={logs} />
