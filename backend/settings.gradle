@@ -5,10 +5,4 @@ pluginManagement {
     }
 }
 
-plugins {
-    // This plugin allows Gradle to automatically download the correct Java version (JDK 17)
-    // if it is missing on the machine (like on Railway).
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
-}
-
 rootProject.name = 'ticketsimulator'
