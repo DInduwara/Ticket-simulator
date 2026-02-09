@@ -1,6 +1,7 @@
 package com.personal.ticketsimulator.simulation;
 
 import com.personal.ticketsimulator.domain.SystemConfiguration;
+import com.personal.ticketsimulator.repo.TicketSaleRepository;
 import com.personal.ticketsimulator.service.messaging.RealtimePublisher;
 
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ public class SimulationFactory {
             AtomicBoolean running,
             RealtimePublisher publisher,
             SystemConfiguration cfg,
+            TicketSaleRepository saleRepository,
             int vendorCount,
             int customerCount,
             int vipCount
@@ -28,20 +30,22 @@ public class SimulationFactory {
                     "V" + i,
                     pool,
                     cfg.getTicketReleaseRate(),
-                    800,
+                    1000,
                     running,
                     publisher
             ));
         }
 
         // VIP customers
+        long vipDelay = Math.max(100, cfg.getCustomerRetrievalRate() / 2);
         for (int i = 1; i <= vipCount; i++) {
             tasks.add(new VipCustomer(
                     "VIP" + i,
                     pool,
-                    600,
+                    vipDelay,
                     running,
-                    publisher
+                    publisher,
+                    saleRepository
             ));
         }
 
@@ -51,9 +55,10 @@ public class SimulationFactory {
             tasks.add(new RegularCustomer(
                     "C" + i,
                     pool,
-                    700,
+                    cfg.getCustomerRetrievalRate(),
                     running,
-                    publisher
+                    publisher,
+                    saleRepository
             ));
         }
 

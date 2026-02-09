@@ -1,15 +1,14 @@
 package com.personal.ticketsimulator.simulation;
 
 import com.personal.ticketsimulator.service.messaging.RealtimePublisher;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Vendor extends Participant {
 
     private final String id;
     private final TicketPool pool;
-    private final int releaseRate;
-    private final long intervalMs;
+    private final int releaseRate; // Tickets per batch
+    private final long intervalMs; // Time between batches
     private final RealtimePublisher publisher;
 
     public Vendor(
@@ -35,8 +34,9 @@ public class Vendor extends Participant {
                 for (int i = 0; i < releaseRate; i++) {
                     boolean added = pool.addOne();
                     if (!added) {
-                        running.set(false);
-                        break;
+                        publisher.log("VENDOR", id, "Ticket limit reached. Vendor stopping.");
+                        // CRITICAL FIX: Return to stop THIS thread, do not set running=false
+                        return; 
                     }
                     publisher.log("VENDOR", id, "Released ticket");
                     publisher.status(pool);
@@ -44,6 +44,7 @@ public class Vendor extends Participant {
                 Thread.sleep(intervalMs);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                break;
             }
         }
     }

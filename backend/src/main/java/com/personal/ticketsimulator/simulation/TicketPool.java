@@ -30,12 +30,16 @@ public class TicketPool {
         this.totalLimit = totalLimit;
     }
 
-    // Producer adds ONE ticket (you can loop in Vendor for rate)
+    // Producer adds ONE ticket
     public boolean addOne() throws InterruptedException {
         lock.lock();
         try {
-            if (released >= totalLimit) return false;
+            // Check if we have already generated the total number of tickets allowed
+            if (released >= totalLimit) {
+                return false; 
+            }
 
+            // Wait if the pool is currently full
             while (pool.size() >= maxCapacity) {
                 notFull.await();
             }
@@ -43,9 +47,12 @@ public class TicketPool {
             pool.addLast(new Ticket());
             released++;
 
-            // VIP priority wake-up
-            if (vipWaiters > 0) notEmptyVip.signal();
-            else notEmptyRegular.signal();
+            // VIP priority signal: Wake up VIPs first if any are waiting
+            if (vipWaiters > 0) {
+                notEmptyVip.signal();
+            } else {
+                notEmptyRegular.signal();
+            }
 
             return true;
         } finally {
@@ -53,13 +60,19 @@ public class TicketPool {
         }
     }
 
-    // Consumer removes ONE ticket; VIP chooses VIP condition
+    // Consumer removes ONE ticket
     public Optional<Ticket> removeOne(boolean vip) throws InterruptedException {
         lock.lock();
         try {
             if (vip) vipWaiters++;
             try {
+                // Wait while the pool is empty
                 while (pool.isEmpty()) {
+                    // Check if vendors are done and pool is empty (optional safety)
+                    if (released >= totalLimit && pool.isEmpty()) {
+                         return Optional.empty(); // No more tickets will ever come
+                    }
+
                     if (vip) notEmptyVip.await();
                     else notEmptyRegular.await();
                 }
@@ -76,23 +89,20 @@ public class TicketPool {
         }
     }
 
-    // ---- Read-only helpers ----
+    // ---- Read-only helpers for UI status ----
     public int available() {
         lock.lock();
-        try { return pool.size(); }
-        finally { lock.unlock(); }
+        try { return pool.size(); } finally { lock.unlock(); }
     }
 
     public int released() {
         lock.lock();
-        try { return released; }
-        finally { lock.unlock(); }
+        try { return released; } finally { lock.unlock(); }
     }
 
     public int sold() {
         lock.lock();
-        try { return sold; }
-        finally { lock.unlock(); }
+        try { return sold; } finally { lock.unlock(); }
     }
 
     public int maxCapacity() { return maxCapacity; }
