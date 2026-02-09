@@ -1,6 +1,7 @@
 package com.personal.ticketsimulator.controller;
 
 import com.personal.ticketsimulator.domain.SystemConfiguration;
+import com.personal.ticketsimulator.repo.TicketSaleRepository;
 import com.personal.ticketsimulator.service.ConfigService;
 import com.personal.ticketsimulator.service.SimulationService;
 import com.personal.ticketsimulator.service.messaging.RealtimePublisher;
@@ -16,15 +17,18 @@ public class SimulationController {
     private final SimulationService simulationService;
     private final ConfigService configService;
     private final RealtimePublisher publisher;
+    private final TicketSaleRepository saleRepository;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     public SimulationController(SimulationService simulationService,
                                 ConfigService configService,
-                                RealtimePublisher publisher) {
+                                RealtimePublisher publisher,
+                                TicketSaleRepository saleRepository) {
         this.simulationService = simulationService;
         this.configService = configService;
         this.publisher = publisher;
+        this.saleRepository = saleRepository;
     }
 
     @PostMapping("/start")
@@ -41,8 +45,10 @@ public class SimulationController {
         TicketPool pool = new TicketPool(cfg.getMaxTicketCapacity(), cfg.getTotalTickets());
         running.set(true);
 
-        // Create tasks
-        Runnable[] tasks = SimulationFactory.build(pool, running, publisher, cfg, vendors, customers, vip);
+        // Pass saleRepository to the factory
+        Runnable[] tasks = SimulationFactory.build(
+                pool, running, publisher, cfg, saleRepository, vendors, customers, vip
+        );
 
         simulationService.start(tasks);
 

@@ -6,9 +6,16 @@ plugins {
 
 group = 'com.personal'
 version = '0.0.1'
-java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
 
-repositories { mavenCentral() }
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -16,12 +23,12 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
 
-    runtimeOnly 'org.xerial:sqlite-jdbc:3.46.1.0'
-    implementation 'org.hibernate.orm:hibernate-community-dialects:6.5.2.Final' // SQLite dialect
+    // MySQL Driver
+    runtimeOnly 'com.mysql:mysql-connector-j'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
-springBoot {
-    mainClass = 'com.personal.ticketsimulator.TicketingApplication'
+tasks.named('test') {
+    useJUnitPlatform()
 }

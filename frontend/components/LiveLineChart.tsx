@@ -1,160 +1,101 @@
 "use client";
-
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Card } from "./Card";
+import { useEffect, useState } from "react";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts";
+import { Card } from "./ui/Card";
 import { TicketStatus } from "@/types/events";
 
-type Point = {
-  t: number;
+type ChartData = {
+  time: string;
   available: number;
   sold: number;
-  booth: number; // ✅ sold + available
+  released: number;
 };
 
-type Props = {
-  status: TicketStatus | null;
-  maxPoints?: number;
-  sampleMs?: number;
-};
-
-export function LiveLineChart({ status, maxPoints = 80, sampleMs = 700 }: Props) {
-  const [series, setSeries] = useState<Point[]>([]);
-  const statusRef = useRef<TicketStatus | null>(null);
+export function LiveLineChart({ status }: { status: TicketStatus | null }) {
+  const [data, setData] = useState<ChartData[]>([]);
 
   useEffect(() => {
-    statusRef.current = status;
+    if (!status) return;
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+    setData((prev) => {
+      const newData = [...prev, { 
+        time: timeStr, 
+        available: status.available, 
+        sold: status.totalSold,
+        released: status.totalReleased 
+      }];
+      return newData.slice(-40); // Increased window for better visualization
+    });
   }, [status]);
 
-  // ✅ one stable interval
-  useEffect(() => {
-    const id = setInterval(() => {
-      const s = statusRef.current;
-      if (!s) return;
-
-      const available = Math.max(0, s.available ?? 0);
-      const sold = Math.max(0, s.totalSold ?? 0);
-      const booth = sold + available;
-
-      setSeries((prev) => {
-        const p: Point = { t: Date.now(), available, sold, booth };
-        const next = [...prev, p];
-        return next.length > maxPoints ? next.slice(next.length - maxPoints) : next;
-      });
-    }, sampleMs);
-
-    return () => clearInterval(id);
-  }, [maxPoints, sampleMs]);
-
-  const width = 980;
-  const height = 320;
-  const pad = 36;
-
-  const { paths, yMax } = useMemo(() => {
-    const pts = series;
-
-    const maxY =
-      pts.length > 0
-        ? Math.max(...pts.map((p) => Math.max(p.available, p.sold, p.booth)), 1)
-        : 1;
-
-    const xScale = (i: number) =>
-      pad + (i * (width - pad * 2)) / Math.max(1, pts.length - 1);
-
-    const yScale = (v: number) =>
-      height - pad - (v * (height - pad * 2)) / maxY;
-
-    const buildPath = (getY: (p: Point) => number) => {
-      if (pts.length === 0) return "";
-      return pts
-        .map((p, i) => `${i === 0 ? "M" : "L"} ${xScale(i)} ${yScale(getY(p))}`)
-        .join(" ");
-    };
-
-    return {
-      yMax: maxY,
-      paths: {
-        booth: buildPath((p) => p.booth),
-        sold: buildPath((p) => p.sold),
-        available: buildPath((p) => p.available),
-      },
-    };
-  }, [series]);
-
-  const last = series[series.length - 1];
+  if (!data.length) {
+    return (
+        <Card className="h-[400px] flex items-center justify-center text-zinc-400 text-sm">
+            <div className="flex flex-col items-center gap-2">
+                <div className="h-6 w-6 rounded-full border-2 border-t-transparent border-indigo-500 animate-spin" />
+                <span>Waiting for simulation stream...</span>
+            </div>
+        </Card>
+    );
+  }
 
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-3">
+    <Card className="h-[400px] flex flex-col p-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="text-sm font-semibold">Real-time Ticket Trend</div>
-          <div className="text-xs text-zinc-500">
-            Booth (green = sold+available), Sold (red), Available (yellow)
-          </div>
+            <h3 className="text-lg font-bold text-zinc-900">Throughput Analytics</h3>
+            <p className="text-xs text-zinc-500">Real-time supply vs demand curves</p>
         </div>
-
-        <div className="text-right text-xs text-zinc-600">
-          <div>Samples: {series.length}</div>
-          <div>Y max: {Math.round(yMax)}</div>
-          {last && (
-            <div className="text-[11px] text-zinc-500">
-              booth={last.booth} • sold={last.sold} • avail={last.available}
+        <div className="flex gap-4 text-xs font-semibold bg-zinc-100/50 p-2 rounded-lg border border-zinc-200/50">
+            <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span>
+                <span>Released</span>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>
+                <span>Available</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                <span>Sold</span>
+            </div>
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <svg
-          width={width}
-          height={height}
-          className="rounded-xl border border-zinc-200 bg-white"
-          role="img"
-          aria-label="Real-time line chart for booth, sold, and available tickets"
-        >
-          {/* axes */}
-          <line x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="black" strokeWidth="2" />
-          <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="black" strokeWidth="2" />
-
-          {/* grid */}
-          {[0.25, 0.5, 0.75].map((k) => {
-            const y = pad + k * (height - pad * 2);
-            return (
-              <line
-                key={k}
-                x1={pad}
-                y1={y}
-                x2={width - pad}
-                y2={y}
-                stroke="#e5e7eb"
-                strokeWidth="1"
-              />
-            );
-          })}
-
-          {/* lines */}
-          <path d={paths.booth} fill="none" stroke="#84cc16" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
-          <path d={paths.sold} fill="none" stroke="#ef4444" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
-          <path d={paths.available} fill="none" stroke="#f59e0b" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
-
-          {/* legend */}
-          <g transform={`translate(${pad + 10},${pad + 10})`}>
-            <LegendItem y={0} color="#84cc16" label="Booth (Sold + Available)" />
-            <LegendItem y={18} color="#ef4444" label="Sold" />
-            <LegendItem y={36} color="#f59e0b" label="Available" />
-          </g>
-        </svg>
+      <div className="flex-1 w-full min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data}>
+            <defs>
+              <linearGradient id="colorReleased" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="colorAvailable" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="colorSold" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" strokeOpacity={0.5} />
+            <XAxis dataKey="time" stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} dy={10} />
+            <YAxis stroke="#a1a1aa" fontSize={11} tickLine={false} axisLine={false} dx={-10} />
+            <Tooltip 
+                contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                itemStyle={{ fontSize: '12px', fontWeight: 600, padding: '2px 0' }}
+            />
+            <Area type="monotone" dataKey="released" stroke="#f59e0b" strokeWidth={3} fillOpacity={1} fill="url(#colorReleased)" />
+            <Area type="monotone" dataKey="sold" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorSold)" />
+            <Area type="monotone" dataKey="available" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorAvailable)" />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </Card>
-  );
-}
-
-function LegendItem({ y, color, label }: { y: number; color: string; label: string }) {
-  return (
-    <g transform={`translate(0, ${y})`}>
-      <line x1={0} y1={8} x2={28} y2={8} stroke={color} strokeWidth={4} strokeLinecap="round" />
-      <text x={36} y={12} fontSize="12" fill="#111827">
-        {label}
-      </text>
-    </g>
   );
 }

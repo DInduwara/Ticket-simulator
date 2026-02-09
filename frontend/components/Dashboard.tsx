@@ -1,92 +1,78 @@
 "use client";
-
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { connectRealtime } from "@/lib/ws";
 import { LogEvent, TicketStatus } from "@/types/events";
-import { StatGrid } from "./StatGrid";
-import { LogsPanel } from "./LogsPanel";
-import { Badge } from "./Badge";
 import { api } from "@/lib/api";
-import { LiveFlowDiagram } from "@/components/LiveFlowDiagram";
-import { LiveLineChart } from "@/components/LiveLineChart";
-
+import { ConfigForm } from "./ConfigForm";
+import { Controls } from "./Controls";
+import { StatGrid } from "./StatGrid";
+import { LiveFlowDiagram } from "./LiveFlowDiagram";
+import { LogsPanel } from "./LogsPanel";
+import { Badge } from "./ui/Badge";
+import { LiveLineChart } from "./LiveLineChart";
 
 export function Dashboard() {
-    const [connected, setConnected] = useState(false);
-    const [status, setStatus] = useState<TicketStatus | null>(null);
-    const [logs, setLogs] = useState<LogEvent[]>([]);
-    const [simState, setSimState] = useState<string>("UNKNOWN");
+  const [status, setStatus] = useState<TicketStatus | null>(null);
+  const [logs, setLogs] = useState<LogEvent[]>([]);
+  const [connected, setConnected] = useState(false);
+  const [simState, setSimState] = useState("UNKNOWN");
 
-    useEffect(() => {
-        api.simStatus().then(setSimState).catch(() => setSimState("UNKNOWN"));
-    }, []);
+  const refreshStatus = () => api.simStatus().then(setSimState).catch(() => setSimState("OFFLINE"));
 
-    useEffect(() => {
-        const disconnect = connectRealtime({
-            onConnected: () => setConnected(true),
-            onDisconnected: () => setConnected(false),
-            onStatus: (s) => setStatus(s),
-            onLog: (l) => {
-                setLogs((prev) => [l, ...prev].slice(0, 200)); // keep last 200
-            },
-        });
-        return () => disconnect();
-    }, []);
+  useEffect(() => {
+    refreshStatus();
+    const disconnect = connectRealtime({
+      onConnected: () => setConnected(true),
+      onDisconnected: () => setConnected(false),
+      onStatus: setStatus,
+      onLog: (l) => setLogs((prev) => [l, ...prev].slice(0, 100)),
+    });
+    return () => disconnect();
+  }, []);
 
-    const ui = useMemo(() => {
-        const available = status?.available ?? 0;
-        const released = status?.totalReleased ?? 0;
-        const sold = status?.totalSold ?? 0;
-        const maxCapacity = status?.maxCapacity ?? 0;
-        const totalLimit = status?.totalLimit ?? 0;
-        return { available, released, sold, maxCapacity, totalLimit };
-    }, [status]);
-
-    return (
-        <div className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                    <div className="text-xl font-semibold text-zinc-900">Real-Time Dashboard</div>
-                    <div className="text-sm text-zinc-500">
-                        WebSocket: {connected ? <span className="text-green-600">Connected</span> : <span className="text-red-600">Disconnected</span>}
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Badge text={`Sim: ${simState}`} />
-                    {status?.at && <Badge text={`Updated: ${new Date(status.at).toLocaleTimeString()}`} />}
-                </div>
-            </div>
-
-            <StatGrid
-                available={ui.available}
-                released={ui.released}
-                sold={ui.sold}
-                maxCapacity={ui.maxCapacity}
-                totalLimit={ui.totalLimit}
-            />
-
-            <LiveFlowDiagram
-                status={status}
-                logs={logs}
-                vendorCount={2}
-                customerCount={8}
-                vipCount={2}
-            />
-            <LiveLineChart status={status} />
-
-
-
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <LogsPanel logs={logs} />
-                <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-                    <div className="text-sm font-semibold">Notes</div>
-                    <div className="mt-2 text-sm text-zinc-700">
-                        - Status updates come from <code>/topic/status</code><br />
-                        - Logs come from <code>/topic/logs</code><br />
-                        - If disconnected, make sure backend allows SockJS and the WS endpoint is <code>/ws</code>
-                    </div>
-                </div>
-            </div>
+  return (
+    <div className="space-y-8 pb-12 animate-fade-in">
+      {/* 1. Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight text-zinc-900">
+            TicketSim<span className="text-indigo-600">Pro</span>
+          </h1>
+          <p className="text-sm font-medium text-zinc-500 mt-1">Real-time Concurrency & Event Monitor</p>
         </div>
-    );
+        <div className="flex items-center gap-3">
+           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${connected ? 'bg-emerald-50/50 border-emerald-200 text-emerald-700' : 'bg-rose-50/50 border-rose-200 text-rose-700'} backdrop-blur-sm`}>
+             <div className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+             <span className="text-xs font-bold uppercase">{connected ? "System Online" : "Disconnected"}</span>
+           </div>
+           <Badge text={simState} color={simState === "RUNNING" ? "blue" : "gray"} />
+        </div>
+      </div>
+
+      {/* 2. Hero Stats */}
+      <StatGrid 
+        available={status?.available ?? 0}
+        released={status?.totalReleased ?? 0}
+        sold={status?.totalSold ?? 0}
+        maxCapacity={status?.maxCapacity ?? 0}
+      />
+
+      {/* 3. Main Control Deck */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div className="xl:col-span-7 h-full"><ConfigForm /></div>
+        <div className="xl:col-span-5 h-full"><Controls onStatusChange={refreshStatus} /></div>
+      </div>
+
+      {/* 4. Analytics Section */}
+      <div className="w-full">
+         <LiveLineChart status={status} />
+      </div>
+
+      {/* 5. Visualization & Logs */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <LiveFlowDiagram logs={logs} status={status} />
+        <LogsPanel logs={logs} />
+      </div>
+    </div>
+  );
 }
