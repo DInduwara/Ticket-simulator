@@ -3,30 +3,55 @@
 ############################
 .DS_Store
 Thumbs.db
+.os
+*.swp
 
 ############################
-# IntelliJ / JetBrains
+# IntelliJ / JetBrains / VS Code
 ############################
 .idea/
 *.iml
+*.iws
+*.ipr
 out/
 .vscode/
+.history/
 
 ############################
 # Java / Spring Boot
 ############################
-backend/.gradle/
+# Ignore build outputs and gradle caches
 backend/build/
+backend/bin/
+backend/out/
+backend/.gradle/
 backend/target/
-backend/logs/
+
+# Ignore compiled class files and package artifacts
+*.class
+*.log
+*.ctxt
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# !IMPORTANT! Allow the Gradle Wrapper (Railway needs this to build!)
+!backend/gradle/wrapper/gradle-wrapper.jar
+!backend/gradle/wrapper/gradle-wrapper.properties
 
 ############################
-# SQLite
+# Database
 ############################
 backend/data/
 *.db
 *.sqlite
 *.sqlite3
+# Ignore local SQL dumps if you make them
+*.sql
 
 ############################
 # Node / Next.js
@@ -34,29 +59,30 @@ backend/data/
 frontend/node_modules/
 frontend/.next/
 frontend/out/
+frontend/build/
+frontend/dist/
 frontend/.turbo/
 
+# Vercel temporary files
+frontend/.vercel/
+.vercel/
+
+# TypeScript caching
+*.tsbuildinfo
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
 ############################
-# Environment files
+# Environment files (Security)
 ############################
+# Never commit your passwords!
 .env
 .env.local
-.env.development
-.env.production
-
-############################
-# Logs
-############################
-*.log
-
-############################
-# Coverage / Reports
-############################
-coverage/
-*.lcov
-
-############################
-# Temporary / Cache
-############################
-.tmp/
-.cache/
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
