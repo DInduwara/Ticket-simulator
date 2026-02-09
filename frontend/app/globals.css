@@ -24,3 +24,14 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes flow-release {
+  0% { transform: translate(-220px, -50%); opacity: 0.2; }
+  100% { transform: translate(0px, -50%); opacity: 1; }
+}
+
+@keyframes flow-sell {
+  0% { transform: translate(0px, -50%); opacity: 0.2; }
+  100% { transform: translate(220px, -50%); opacity: 1; }
+}
+
