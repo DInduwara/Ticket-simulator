@@ -1,0 +1,10 @@
+# backend/nixpacks.toml
+
+[phases.setup]
+nixPkgs = ["zlib", "jdk17"]
+
+[phases.build]
+cmds = ["chmod +x gradlew", "./gradlew clean build -x check -x test -Pproduction"]
+
+[start]
+cmd = "java -jar build/libs/*.jar"
