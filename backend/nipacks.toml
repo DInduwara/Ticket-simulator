@@ -7,4 +7,4 @@ nixPkgs = ["zlib", "jdk17"]
 cmds = ["chmod +x gradlew", "./gradlew clean build -x check -x test -Pproduction"]
 
 [start]
-cmd = "java -jar build/libs/app.jar"
+cmd = "java -Xmx350m -Xss512k -jar build/libs/app.jar"
