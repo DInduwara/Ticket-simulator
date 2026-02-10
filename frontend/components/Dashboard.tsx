@@ -19,17 +19,18 @@ export function Dashboard() {
 
   const refreshStatus = () => api.simStatus().then(setSimState).catch(() => setSimState("OFFLINE"));
 
-  useEffect(() => {
-    refreshStatus();
-    const disconnect = connectRealtime({
-      onConnected: () => setConnected(true),
+    useEffect(() => {
+        refreshStatus();
+        const disconnect = connectRealtime({
+            onConnected: () => setConnected(true),
       onDisconnected: () => setConnected(false),
       onStatus: setStatus,
       onLog: (l) => setLogs((prev) => [l, ...prev].slice(0, 100)),
     });
-    return () => disconnect();
-  }, []);
-
+        return () => {
+            disconnect();
+        };
+    }, []);
   return (
     <div className="space-y-8 pb-12 animate-fade-in">
       {/* 1. Header Section */}
