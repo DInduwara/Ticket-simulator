@@ -11,7 +11,10 @@ export function StatGrid({ available, released, sold, maxCapacity }: any) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((s) => (
-        <Card key={s.label} className="flex items-center justify-between p-4 border-l-4" style={{borderLeftColor: 'currentColor'}}>
+          <Card
+              key={s.label}
+              className="flex items-center justify-between p-4 border-l-4 border-current"
+          >
           <div>
             <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{s.label}</div>
             <div className="mt-1 text-3xl font-bold text-zinc-900">{s.value}</div>
